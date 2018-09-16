@@ -17,7 +17,7 @@ module.exports = {
       host: "localhost",
       port: 8545,
       network_id: "*",
-      gas: 4712387,
+      gas: 6721975,
     }
   }
   // See <http://truffleframework.com/docs/advanced/configuration>

@@ -1,5 +1,6 @@
-var Auction = artifacts.require("./Auction.sol");
+var Auction = artifacts.require("Auction");
 
 module.exports = function (deployer) {
-    deployer.deploy(Auction);
+    deployer.deploy(Auction, 5, 5);
+    // To pass arguments, separate by comma
 };
