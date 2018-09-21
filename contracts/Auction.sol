@@ -23,7 +23,8 @@ contract Auction
     Bidder[] public bidders;    
 
     mapping(address => Notary) public bToN;
-
+    mapping(address => uint[2]) public bidValues;
+    
     constructor (uint _q, uint _m) 
     public
     {
@@ -115,18 +116,49 @@ contract Auction
         for(uint i=0;i<bidders.length;i++)
         {
             bToN[bidders[i].addr] = notaries[i];
+            bidValues[notaries[i].addr]=bidders[i].w;        
         }   
     }
-
+    function Procedure1(address a1,address a2) returns(uint){
+        
+        if(a1==msg.sender){
+            uint u1 = bidValues[a1][0];
+            uint u2 = bidValues[a2][0];
+            uint val1;
+            val1= u1-u2;
+            return val1;
+        }
+        else
+        {
+            if(a2==msg.sender){
+                uint v1 = bidValues[a1][1];
+                uint v2 = bidValues[a2][1];
+                uint val2;            
+                val2 = v1-v2;
+                return val2;
+            }
+        }
+    }
     // Auctioneer starts the process to find the winner.
+    
     function findWinner()
     onlyAuctioneer()
     {
         // Sort the bidders array according to Procedure 1.
 
         //
-
-        
+        for (uint i = 0; i <bidders.length; i++)      
+        {
+            // Last i elements are already in place   
+            for (uint j = 0; j < bidders.length-i-1; j++){ 
+               if (Procedure1(notaries[j].addr,notaries[j+1].addr) + Procedure1(notaries[j].addr,notaries[j+1].addr)<q/2)
+              {
+                  Bidder v=bidders[j];
+                  bidders[j]=bidders[j+1];
+                  bidders[j]=v;
+              }
+            }
+        }
     }
 
     // function 
@@ -138,5 +170,5 @@ contract Auction
     {
         return q;
     }
-     */
+*/
 }
