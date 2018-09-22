@@ -13,7 +13,13 @@ contract Auction
         uint[2][] uv;   // The random representations of the items 
         uint[2] w;  // The random representation of w
     }
-
+    struct Result
+    {
+        address addr;
+        uint u;
+        uint v;
+    }
+    
     address public auctioneer;  // Auctioneer conducts the auction, maybe beneficiary also as of now?
     uint public q;  // Q decided by auctioneer
     uint[] items;    // Items array
@@ -21,9 +27,12 @@ contract Auction
 
     Notary[] public notaries;
     Bidder[] public bidders;    
-
+    uint public count;
+    
     mapping(address => Notary) public bToN;
     mapping(address => uint[2]) public bidValues;
+    mapping(address => uint) public workDone;
+    mapping(address => Result[]) public results;
     
     constructor (uint _q, uint _m) 
     public
@@ -43,6 +52,8 @@ contract Auction
     modifier onlyBefore(uint _time) { require(now < _time, "Too Late"); _; }
     modifier onlyAfter(uint _time) { require(now > _time, "Too Early"); _; }
     modifier onlyAuctioneer() {require(msg.sender == auctioneer, "Only Auctioneer is allowed to call this method"); _; }
+    modifier workCompleted() { require(count == notaries.length,"All notaries have not finished work.."); _; }
+    
     modifier isNotBidder()
     {
         bool flag = false;
@@ -64,9 +75,24 @@ contract Auction
             if(msg.sender == notaries[i].addr)
             {
                 flag = true;
+                break;
             }
         }
         require(flag == false);
+        _;
+    } 
+    modifier isNotary()
+    {
+        bool flag = false;
+        for(uint i=0;i<notaries.length; i++)
+        {
+            if(msg.sender == notaries[i].addr)
+            {
+                flag = true;
+                break;
+            }
+        }
+        require(flag == true);
         _;
     } 
     
@@ -75,7 +101,7 @@ contract Auction
     event auctionCreated(uint q, uint m);
 
     // Bidder will bid using this function
-    function bid(uint[2][] _uv, uint[2] _w)
+    function registerBidder(uint[2][] _uv, uint[2] _w)
     isNotBidder()   // Same bidder can't bid more than once
     public
     {
@@ -91,7 +117,7 @@ contract Auction
     }
 
     // Notary will register using this function
-    function register()
+    function registerNotary()
     isNotNotary()   // Same notary can't register more than once
     public
     {
@@ -107,6 +133,7 @@ contract Auction
      */
     function assignNotary()
     onlyAuctioneer()    // Only auctioneer should be able to call this method
+    
     {
         /* 
         mapping(struct -> struct) is not possible in solidity 
@@ -119,30 +146,32 @@ contract Auction
             bidValues[notaries[i].addr]=bidders[i].w;        
         }   
     }
-    function Procedure1(address a1,address a2) returns(uint){
-        
-        if(a1==msg.sender){
-            uint u1 = bidValues[a1][0];
-            uint u2 = bidValues[a2][0];
-            uint val1;
-            val1= u1-u2;
-            return val1;
-        }
-        else
-        {
-            if(a2==msg.sender){
-                uint v1 = bidValues[a1][1];
-                uint v2 = bidValues[a2][1];
-                uint val2;            
-                val2 = v1-v2;
-                return val2;
+    // uint count public =0;
+    function performWork()
+    isNotary()
+    {
+        count++;
+        address myadd = msg.sender;
+        uint[2] w2;
+        w2=bidValues[myadd];
+        for(uint i=0;i<notaries.length;i++){
+            if(notaries[i].addr!=myadd){
+                uint[2] w1;
+                w1=bidValues[notaries[i].addr];
+                Result r;
+                r.addr = notaries[i].addr;
+                r.u=w2[0]-w1[0];
+                r.v=w1[1]-w2[1];
+                results[myadd].push(r);
             }
         }
     }
+    
     // Auctioneer starts the process to find the winner.
     
     function findWinner()
     onlyAuctioneer()
+    workCompleted()
     {
         // Sort the bidders array according to Procedure 1.
 
@@ -150,12 +179,35 @@ contract Auction
         for (uint i = 0; i <bidders.length; i++)      
         {
             // Last i elements are already in place   
-            for (uint j = 0; j < bidders.length-i-1; j++){ 
-               if (Procedure1(notaries[j].addr,notaries[j+1].addr) + Procedure1(notaries[j].addr,notaries[j+1].addr)<q/2)
+            for (uint j = 0; j < bidders.length-i-1; j++){
+                uint val1;
+                uint val2;
+                for(uint k=0;k<results[notaries[j].addr].length;k++)
+                {
+                    if((results[notaries[j].addr][k]).addr==notaries[j+1].addr)
+                    {    
+                        val1=(results[notaries[j].addr][k]).u;
+                        break;
+                    }
+                }
+                
+                for(k=0;k<results[notaries[j+1].addr].length;k++)
+                {
+                    if((results[notaries[j+1].addr][k]).addr==notaries[j].addr)
+                    {    
+                        val2=(results[notaries[j+1].addr][k]).v;
+                        break;
+                    }
+                }
+               if((val1+val2)<q/2)
               {
+                  uint[2] w1 = bidValues[notaries[j].addr];
+                  bidValues[notaries[j].addr] = bidValues[notaries[j+1].addr];
+                  bidValues[notaries[j+1].addr] = w1;
                   Bidder v=bidders[j];
                   bidders[j]=bidders[j+1];
-                  bidders[j]=v;
+                  bidders[j+1]=v;
+                  
               }
             }
         }
