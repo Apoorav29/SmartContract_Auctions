@@ -32,14 +32,17 @@ contract Auction
     Bidder[] public winners;
     Notary[] public notaries;
     Bidder[] public bidders;    
+    
     uint public count;
     uint public countIntersection;
+    
     mapping(address => Notary) public bToN;
     mapping(address => uint[2]) public bidValues;
     mapping(address => uint[]) public item_map;
     mapping(address => setIntersection[]) public set_values;
     mapping(address => uint) public workDone;
     mapping(address => Result[]) public results;
+    
     
     constructor (uint _q, uint _m) 
     public
@@ -61,6 +64,7 @@ contract Auction
     modifier onlyAuctioneer() {require(msg.sender == auctioneer, "Only Auctioneer is allowed to call this method"); _; }
     modifier workCompleted() { require(count == notaries.length,"All notaries have not finished work.."); _; }
     modifier workCompleted1() { require(countIntersection == notaries.length,"All notaries have not finished work.."); _; }
+    
     
     modifier isNotBidder()
     {
@@ -223,6 +227,10 @@ contract Auction
         for(uint i=1;i<bidders.length;i++){
             flag=0;
             for(uint j=0;j<winners.length;j++){
+                
+                workDone[bidders[i].addr]++;
+                workDone[winners[j].addr]++;
+                
                 for(uint k=0;k<set_values[notaries[i].addr].length;k++){
                     if(((set_values[notaries[i].addr][k]).addr)==(bToN[winners[j].addr]).addr)
                     {
@@ -251,6 +259,9 @@ contract Auction
             for (uint j = 0; j < bidders.length-i-1; j++){
                 uint val1;
                 uint val2;
+                workDone[bidders[j].addr]++;
+                workDone[bidders[j+1].addr]++;
+                
                 for(uint k=0;k<results[notaries[j].addr].length;k++)
                 {
                     if((results[notaries[j].addr][k]).addr==notaries[j+1].addr)
