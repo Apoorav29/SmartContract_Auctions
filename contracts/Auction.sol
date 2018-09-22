@@ -19,18 +19,25 @@ contract Auction
         uint u;
         uint v;
     }
-    
+    struct setIntersection
+    {
+        address addr;
+        bool intersect;
+    }
     address public auctioneer;  // Auctioneer conducts the auction, maybe beneficiary also as of now?
     uint public q;  // Q decided by auctioneer
     uint[] items;    // Items array
     uint auctionEnded;  // Whether auction  ended or not
-
+    
+    Bidder[] public winners;
     Notary[] public notaries;
     Bidder[] public bidders;    
     uint public count;
-    
+    uint public countIntersection;
     mapping(address => Notary) public bToN;
     mapping(address => uint[2]) public bidValues;
+    mapping(address => uint[]) public item_map;
+    mapping(address => setIntersection[]) public set_values;
     mapping(address => uint) public workDone;
     mapping(address => Result[]) public results;
     
@@ -53,6 +60,7 @@ contract Auction
     modifier onlyAfter(uint _time) { require(now > _time, "Too Early"); _; }
     modifier onlyAuctioneer() {require(msg.sender == auctioneer, "Only Auctioneer is allowed to call this method"); _; }
     modifier workCompleted() { require(count == notaries.length,"All notaries have not finished work.."); _; }
+    modifier workCompleted1() { require(countIntersection == notaries.length,"All notaries have not finished work.."); _; }
     
     modifier isNotBidder()
     {
@@ -143,7 +151,12 @@ contract Auction
         for(uint i=0;i<bidders.length;i++)
         {
             bToN[bidders[i].addr] = notaries[i];
-            bidValues[notaries[i].addr]=bidders[i].w;        
+            bidValues[notaries[i].addr]=bidders[i].w;
+            
+            for(uint j=0;j<bidders[i].uv.length;j++)
+            {
+                item_map[notaries[i].addr].push((bidders[i].uv[j][0]+bidders[i].uv[j][1])%q);
+            }
         }   
     }
     // uint count public =0;
@@ -169,13 +182,69 @@ contract Auction
     
     // Auctioneer starts the process to find the winner.
     
-    function findWinner()
+    function prior_Winner()
+    isNotary()
+    {
+        
+        countIntersection++;
+        address myadd = msg.sender;
+        uint[] w2;
+        w2=item_map[myadd];
+        for(uint i=0;i<notaries.length;i++){
+            if(notaries[i].addr!=myadd){
+                uint[] w1;
+                w1=item_map[notaries[i].addr];
+                setIntersection si;
+                si.addr=notaries[i].addr;
+                
+                for(uint j=0;j<w2.length;j++){
+                    for(uint k=0;k<w1.length;k++){
+                        if(w2[j]==w1[k])
+                        {
+                            si.intersect = true;
+                            break;
+                        }
+                    }
+                    if(w2[j]==w1[k])
+                        break;
+                    
+                }
+                set_values[myadd].push(si);
+            }
+        }
+    }
+    
+    function findWinners()
+    onlyAuctioneer()
+    workCompleted1()
+    {
+        winners.push(bidders[0]);
+        uint flag;
+        for(uint i=1;i<bidders.length;i++){
+            flag=0;
+            for(uint j=0;j<winners.length;j++){
+                for(uint k=0;k<set_values[notaries[i].addr].length;k++){
+                    if(((set_values[notaries[i].addr][k]).addr)==(bToN[winners[j].addr]).addr)
+                    {
+                        if((set_values[notaries[i].addr][k]).intersect==true){
+                            flag=1;
+                            break;
+                        }
+                    }
+                }
+                if(flag==1)
+                    break;
+            }
+            if(flag==0)
+                winners.push(bidders[i]);
+        }
+    }
+    
+    function sortBidders()
     onlyAuctioneer()
     workCompleted()
     {
         // Sort the bidders array according to Procedure 1.
-
-        //
         for (uint i = 0; i <bidders.length; i++)      
         {
             // Last i elements are already in place   
