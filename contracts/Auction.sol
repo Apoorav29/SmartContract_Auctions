@@ -13,13 +13,13 @@ contract Auction
         uint[2][] uv;   // The random representations of the items 
         uint[2] w;  // The random representation of w
     }
-    struct Result
+    struct Result // for storing result of comparision by notaries
     {
         address addr;
-        uint u;
-        uint v;
+        uint u;  // u1-u2
+        uint v;  // v2-v1
     }
-    struct setIntersection
+    struct setIntersection // for storing result of intersections of item lists
     {
         address addr;
         bool intersect;
@@ -29,19 +29,19 @@ contract Auction
     uint[] items;    // Items array
     uint auctionEnded;  // Whether auction  ended or not
     
-    Bidder[] public winners;
-    Notary[] public notaries;
-    Bidder[] public bidders;    
+    Bidder[] public winners;  // containg list of winners
+    Notary[] public notaries; // containg list of notaries
+    Bidder[] public bidders; // containg list of bidders
     
-    uint public count;
-    uint public countIntersection;
+    uint public count;  // maintains count of notaries who have done comparision work
+    uint public countIntersection; // maintains count of notaries who have done determination of set intersections
     
-    mapping(address => Notary) public bToN;
-    mapping(address => uint[2]) public bidValues;
-    mapping(address => uint[]) public item_map;
-    mapping(address => setIntersection[]) public set_values;
-    mapping(address => uint) public workDone;
-    mapping(address => Result[]) public results;
+    mapping(address => Notary) public bToN; // mapping between bidders and notaries
+    mapping(address => uint[2]) public bidValues; // mapping between notaries and bid values of bidders assigned to them
+    mapping(address => uint[]) public item_map; // mapping between notaries and set of items of bidders assigned to them
+    mapping(address => setIntersection[]) public set_values; // mapping containing notaries address and set intersection results
+    mapping(address => uint) public workDone; // mapping containg notaries address and amount to be paid to notaries
+    mapping(address => Result[]) public results; // mapping between notaries and results of comparision used for sorting
     
     
     constructor (uint _q, uint _m) 
@@ -93,7 +93,7 @@ contract Auction
         require(flag == false);
         _;
     } 
-    modifier sufficientNotaries()
+     modifier sufficientNotaries()
     {
         require(notaries.length>=bidders.length,"Insufficient notaries registered");
         _;
@@ -161,11 +161,11 @@ contract Auction
         for(uint i=0;i<bidders.length;i++)
         {
             bToN[bidders[i].addr] = notaries[i];
-            bidValues[notaries[i].addr]=bidders[i].w;
+            bidValues[notaries[i].addr]=bidders[i].w;  // assigning bidding values of bidders to their notaries
             
             for(uint j=0;j<bidders[i].uv.length;j++)
             {
-                item_map[notaries[i].addr].push((bidders[i].uv[j][0]+bidders[i].uv[j][1])%q);
+                item_map[notaries[i].addr].push((bidders[i].uv[j][0]+bidders[i].uv[j][1])%q); // assigning bidding items of bidders to notaries
             }
         }   
     }
@@ -173,10 +173,10 @@ contract Auction
     function performWork()
     isNotary()
     {
-        count++;
+        count++; // to maintain number of notaries who have done comparision work.
         address myadd = msg.sender;
         uint[2] w2;
-        w2=bidValues[myadd];
+        w2=bidValues[myadd];  // u,v of bidder value of bidder assigned to notary
         for(uint i=0;i<notaries.length;i++){
             if(notaries[i].addr!=myadd){
                 uint[2] w1;
@@ -185,7 +185,7 @@ contract Auction
                 r.addr = notaries[i].addr;
                 r.u=w2[0]-w1[0];
                 r.v=w1[1]-w2[1];
-                results[myadd].push(r);
+                results[myadd].push(r);  // add the val1 and val2 into the mapping
             }
         }
     }
@@ -196,12 +196,13 @@ contract Auction
     isNotary()
     {
         
-        countIntersection++;
+        countIntersection++; // to maintain number of notaries who have done determination of intersection between sets.
         address myadd = msg.sender;
         uint[] w2;
-        w2=item_map[myadd];
+        w2=item_map[myadd];  // array of items for which bidding is to be done by that bidder
         for(uint i=0;i<notaries.length;i++){
-            if(notaries[i].addr!=myadd){
+            if(notaries[i].addr!=myadd)
+            {
                 uint[] w1;
                 w1=item_map[notaries[i].addr];
                 setIntersection si;
@@ -219,7 +220,7 @@ contract Auction
                         break;
                     
                 }
-                set_values[myadd].push(si);
+                set_values[myadd].push(si);  // pushing true or false according to intersection found between array of items of different bidders
             }
         }
     }
@@ -228,7 +229,7 @@ contract Auction
     onlyAuctioneer()
     workCompleted1()
     {
-        winners.push(bidders[0]);
+        winners.push(bidders[0]);  // first bidder in the list is always a winner so add directly
         uint flag;
         for(uint i=1;i<bidders.length;i++){
             flag=0;
@@ -241,7 +242,7 @@ contract Auction
                     if(((set_values[notaries[i].addr][k]).addr)==(bToN[winners[j].addr]).addr)
                     {
                         if((set_values[notaries[i].addr][k]).intersect==true){
-                            flag=1;
+                            flag=1;  // if any intersection found break from loop
                             break;
                         }
                     }
@@ -249,7 +250,7 @@ contract Auction
                 if(flag==1)
                     break;
             }
-            if(flag==0)
+            if(flag==0) //  if no intersection found between previous winner and current bidder make the bidder as a winner
                 winners.push(bidders[i]);
         }
     }
@@ -268,6 +269,7 @@ contract Auction
                 workDone[bidders[j].addr]++;
                 workDone[bidders[j+1].addr]++;
                 
+                // for u1-u2
                 for(uint k=0;k<results[notaries[j].addr].length;k++)
                 {
                     if((results[notaries[j].addr][k]).addr==notaries[j+1].addr)
@@ -277,6 +279,7 @@ contract Auction
                     }
                 }
                 
+                // for v1-v2
                 for(k=0;k<results[notaries[j+1].addr].length;k++)
                 {
                     if((results[notaries[j+1].addr][k]).addr==notaries[j].addr)
@@ -285,7 +288,7 @@ contract Auction
                         break;
                     }
                 }
-               if((val1+val2)<q/2)
+               if((val1+val2)<q/2) // if the condition is true swap the bidders and assigned notaries.
               {
                   uint[2] w1 = bidValues[notaries[j].addr];
                   bidValues[notaries[j].addr] = bidValues[notaries[j+1].addr];
