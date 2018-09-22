@@ -81,6 +81,12 @@ contract Auction
         require(flag == false);
         _;
     } 
+    modifier sufficientNotaries()
+    {
+        require(notaries.length>=bidders.length,"Insufficient notaries registered");
+        _;
+    }
+
     modifier isNotary()
     {
         bool flag = false;
@@ -133,7 +139,7 @@ contract Auction
      */
     function assignNotary()
     onlyAuctioneer()    // Only auctioneer should be able to call this method
-    
+    public
     {
         /* 
         mapping(struct -> struct) is not possible in solidity 
