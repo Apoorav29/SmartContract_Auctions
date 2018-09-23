@@ -42,7 +42,7 @@ contract Auction
     mapping(address => setIntersection[]) public set_values; // mapping containing notaries address and set intersection results
     mapping(address => uint) public workDone; // mapping containg notaries address and amount to be paid to notaries
     mapping(address => Result[]) public results; // mapping between notaries and results of comparision used for sorting
-    
+    mapping(address => uint) public payments;
     
     constructor (uint _q, uint _m) 
     public
@@ -270,29 +270,29 @@ contract Auction
                 workDone[bidders[j+1].addr]++;
                 
                 // for u1-u2
-                for(uint k=0;k<results[notaries[j].addr].length;k++)
+                for(uint k=0;k<results[bToN[bidders[j].addr].addr].length;k++)
                 {
-                    if((results[notaries[j].addr][k]).addr==notaries[j+1].addr)
+                    if((results[bToN[bidders[j].addr].addr][k]).addr==bToN[bidders[j+1].addr].addr)
                     {    
-                        val1=(results[notaries[j].addr][k]).u;
+                        val1=(results[bToN[bidders[j].addr].addr][k]).u;
                         break;
                     }
                 }
                 
                 // for v1-v2
-                for(k=0;k<results[notaries[j+1].addr].length;k++)
+                for(k=0;k<results[bToN[bidders[j+1].addr].addr].length;k++)
                 {
-                    if((results[notaries[j+1].addr][k]).addr==notaries[j].addr)
+                    if((results[bToN[bidders[j+1].addr].addr][k]).addr==bToN[bidders[j].addr].addr)
                     {    
-                        val2=(results[notaries[j+1].addr][k]).v;
+                        val2=(results[bToN[bidders[j+1].addr].addr][k]).v;
                         break;
                     }
                 }
                if((val1+val2)<q/2) // if the condition is true swap the bidders and assigned notaries.
               {
-                  uint[2] w1 = bidValues[notaries[j].addr];
-                  bidValues[notaries[j].addr] = bidValues[notaries[j+1].addr];
-                  bidValues[notaries[j+1].addr] = w1;
+                //   uint[2] w1 = bidValues[notaries[j].addr];   There is no need to swap notaries because there is a mapping between bidders and notaries.
+                //   bidValues[notaries[j].addr] = bidValues[notaries[j+1].addr];
+                //   bidValues[notaries[j+1].addr] = w1;
                   Bidder v=bidders[j];
                   bidders[j]=bidders[j+1];
                   bidders[j+1]=v;
@@ -300,6 +300,54 @@ contract Auction
               }
             }
         }
+    }
+
+    function sqrt(uint x) returns (uint y) {
+        uint z = (x + 1) / 2;
+        y = x;
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
+    }
+    function makePayments()
+    onlyAuctioneer()
+    {
+        for(uint it=0; it<winners.length; it++)
+        {
+            uint idx=-1;
+            uint[2] w1=item_map[bToN[bidders[it].addr].addr];
+            for(uint j=0;j<bidders.length && bidders[j].addr!=winners[it].addr;j++)
+            {
+                uint[2] w2 = item_map[bToN[bidderes[j].addr].addr];
+                bool flag=false;
+                for(uint it1=0;it<w1.length;it1++)
+                {
+                    for(uint it2=0;it2<w2.length;it2++)
+                    {
+                        if(w1[it1]==w2[it2]){
+                            idx=j;
+                            flag=true;
+                            break;
+                        }
+                    }
+                    if(flag=true)
+                        break;
+                }
+                if(flag==true)
+                {
+                    break;
+                }
+            }
+            if(idx==-1)
+            {
+                payments[winners[it].addr]=0;
+            }
+            else
+            {
+                payments[winners[it].addr]=bidValues[bToN[bidders[idx].addr].addr]*sqrt(w1.length);
+            }
+        }   
     }
 
     // function 
