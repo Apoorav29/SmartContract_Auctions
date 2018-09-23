@@ -172,6 +172,7 @@ contract Auction
     // uint count public =0;
     function performWork()
     isNotary()
+    public
     {
         count++; // to maintain number of notaries who have done comparision work.
         address myadd = msg.sender;
@@ -194,6 +195,7 @@ contract Auction
     
     function prior_Winner()
     isNotary()
+    public
     {
         
         countIntersection++; // to maintain number of notaries who have done determination of intersection between sets.
@@ -228,6 +230,7 @@ contract Auction
     function findWinners()
     onlyAuctioneer()
     workCompleted1()
+    public
     {
         winners.push(bidders[0]);  // first bidder in the list is always a winner so add directly
         uint flag;
@@ -258,6 +261,7 @@ contract Auction
     function sortBidders()
     onlyAuctioneer()
     workCompleted()
+    public
     {
         // Sort the bidders array according to Procedure 1.
         for (uint i = 0; i <bidders.length; i++)      
@@ -270,21 +274,21 @@ contract Auction
                 workDone[(bToN[bidders[j+1].addr]).addr]++;
                 
                 // for u1-u2
-                for(uint k=0;k<results[bToN[bidders[j].addr].addr].length;k++)
+                for(uint k=0;k<results[(bToN[bidders[j].addr]).addr].length;k++)
                 {
-                    if((results[bToN[bidders[j].addr].addr][k]).addr==bToN[bidders[j+1].addr].addr)
+                    if((results[(bToN[bidders[j].addr]).addr][k]).addr==(bToN[bidders[j+1].addr]).addr)
                     {    
-                        val1=(results[bToN[bidders[j].addr].addr][k]).u;
+                        val1=(results[(bToN[bidders[j].addr]).addr][k]).u;
                         break;
                     }
                 }
                 
                 // for v1-v2
-                for(k=0;k<results[bToN[bidders[j+1].addr].addr].length;k++)
+                for(k=0;k<results[(bToN[bidders[j+1].addr]).addr].length;k++)
                 {
-                    if((results[bToN[bidders[j+1].addr].addr][k]).addr==bToN[bidders[j].addr].addr)
+                    if((results[(bToN[bidders[j+1].addr]).addr][k]).addr==(bToN[bidders[j].addr]).addr)
                     {    
-                        val2=(results[bToN[bidders[j+1].addr].addr][k]).v;
+                        val2=(results[(bToN[bidders[j+1].addr]).addr][k]).v;
                         break;
                     }
                 }
@@ -312,6 +316,7 @@ contract Auction
     }
     function makePayments()
     onlyAuctioneer()
+    public
     {
         for(uint it=0; it<winners.length; it++)
         {
