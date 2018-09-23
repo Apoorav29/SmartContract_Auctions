@@ -199,15 +199,15 @@ contract Auction
         uint[] w2;
         uint flag1=0;
         w2=item_map[myadd];  // array of items for which bidding is to be done by that bidder
-        for(uint i=0;i<notaries.length;i++){
+        for(uint i=0;i<bidders.length;i++){
             flag1=0;
-            if(notaries[i].addr!=myadd)
+            if(bToN[bidders[i].addr].addr!=myadd)
             {
                 uint[] w1;
-                w1=item_map[notaries[i].addr];
+                w1=item_map[bToN[bidders[i].addr].addr];
                 setIntersection si;
-                si.addr=notaries[i].addr;
-                
+                si.addr=bToN[bidders[i].addr].addr;
+                si.intersect=false;
                 for(uint j=0;j<w2.length;j++){
                     for(uint k=0;k<w1.length;k++){
                         if(w2[j]==w1[k])
@@ -240,10 +240,10 @@ contract Auction
                 workDone[(bToN[bidders[i].addr]).addr]++;
                 workDone[(bToN[winners[j].addr]).addr]++;
                 
-                for(uint k=0;k<set_values[notaries[i].addr].length;k++){
-                    if(((set_values[notaries[i].addr][k]).addr)==(bToN[winners[j].addr]).addr)
+                for(uint k=0;k<set_values[bToN[bidders[i].addr].addr].length;k++){
+                    if(((set_values[bToN[bidders[i].addr].addr][k]).addr)==(bToN[winners[j].addr]).addr)
                     {
-                        if((set_values[notaries[i].addr][k]).intersect==true){
+                        if((set_values[bToN[bidders[i].addr].addr][k]).intersect==true){
                             flag=1;  // if any intersection found break from loop
                             break;
                         }
@@ -293,9 +293,9 @@ contract Auction
                 }
                if((val1+val2)%q >= q/2) // if the condition is true swap the bidders and assigned notaries.
               {
-                  uint[2] memory w1 = bidValues[notaries[j].addr];   //There is no need to swap notaries because there is a mapping between bidders and notaries. -> i guesss it is necessary for the next step in which winner list is determined in the third loop we are accessing notaries array there so check that once..
-                  bidValues[notaries[j].addr] = bidValues[notaries[j+1].addr];
-                  bidValues[notaries[j+1].addr] = w1;
+                //   uint[2] memory w1 = bidValues[notaries[j].addr];   //There is no need to swap notaries because there is a mapping between bidders and notaries. -> i guesss it is necessary for the next step in which winner list is determined in the third loop we are accessing notaries array there so check that once..
+                //   bidValues[notaries[j].addr] = bidValues[notaries[j+1].addr];
+                //   bidValues[notaries[j+1].addr] = w1;
                   Bidder memory v=bidders[j];
                   bidders[j]=bidders[j+1];
                   bidders[j+1]=v;
