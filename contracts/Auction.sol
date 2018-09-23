@@ -1,6 +1,7 @@
 pragma solidity  ^0.4.24;
+import "./usingOraclize.sol";
 
-contract Auction 
+contract Auction
 {
     struct Notary   // Notary struct -- may add more attributes to notary if necessary
     {
@@ -24,6 +25,7 @@ contract Auction
         address addr;
         bool intersect;
     }
+
     address public auctioneer;  // Auctioneer conducts the auction, maybe beneficiary also as of now?
     uint public q;  // Q decided by auctioneer
     uint[] items;    // Items array
@@ -62,10 +64,8 @@ contract Auction
     modifier onlyBefore(uint _time) { require(now < _time, "Too Late"); _; }
     modifier onlyAfter(uint _time) { require(now > _time, "Too Early"); _; }
     modifier onlyAuctioneer() {require(msg.sender == auctioneer, "Only Auctioneer is allowed to call this method"); _; }
-    modifier workCompleted() { require(count == notaries.length,"All notaries have not finished work.."); _; }
-    modifier workCompleted1() { require(countIntersection == notaries.length,"All notaries have not finished work.."); _; }
-    
-    
+    modifier workCompleted() { require(count == notaries.length, "All notaries have not finished work."); _; }
+    modifier workCompleted1() { require(countIntersection == notaries.length, "All notaries have not finished work1."); _; }
     modifier isNotBidder()
     {
         bool flag = false;
@@ -93,12 +93,11 @@ contract Auction
         require(flag == false);
         _;
     } 
-     modifier sufficientNotaries()
+    modifier sufficientNotaries()
     {
         require(notaries.length>=bidders.length,"Insufficient notaries registered");
         _;
     }
-
     modifier isNotary()
     {
         bool flag = false;
@@ -162,7 +161,6 @@ contract Auction
         {
             bToN[bidders[i].addr] = notaries[i];
             bidValues[notaries[i].addr]=bidders[i].w;  // assigning bidding values of bidders to their notaries
-            
             for(uint j=0;j<bidders[i].uv.length;j++)
             {
                 item_map[notaries[i].addr].push((bidders[i].uv[j][0]+bidders[i].uv[j][1])%q); // assigning bidding items of bidders to notaries
@@ -174,7 +172,7 @@ contract Auction
     isNotary()
     public
     {
-        count++; // to maintain number of notaries who have done comparision work.
+        count++; // to maintain number of notaries who have done comparison work.
         address myadd = msg.sender;
         uint[2] w2;
         w2=bidValues[myadd];  // u,v of bidder value of bidder assigned to notary
@@ -190,14 +188,12 @@ contract Auction
             }
         }
     }
-    
     // Auctioneer starts the process to find the winner.
     
     function prior_Winner()
     isNotary()
     public
     {
-        
         countIntersection++; // to maintain number of notaries who have done determination of intersection between sets.
         address myadd = msg.sender;
         uint[] w2;
@@ -228,7 +224,7 @@ contract Auction
     }
     
     function findWinners()
-    onlyAuctioneer()
+    // onlyAuctioneer()
     workCompleted1()
     public
     {
@@ -259,8 +255,8 @@ contract Auction
     }
     
     function sortBidders()
-    onlyAuctioneer()
-    workCompleted()
+    workCompleted() 
+    // onlyAuctioneer()
     public
     {
         // Sort the bidders array according to Procedure 1.
@@ -292,7 +288,7 @@ contract Auction
                         break;
                     }
                 }
-               if((val1+val2)<q/2) // if the condition is true swap the bidders and assigned notaries.
+               if((val1+val2)%q >= q/2) // if the condition is true swap the bidders and assigned notaries.
               {
                   uint[2] w1 = bidValues[notaries[j].addr];   //There is no need to swap notaries because there is a mapping between bidders and notaries. -> i guesss it is necessary for the next step in which winner list is determined in the third loop we are accessing notaries array there so check that once..
                   bidValues[notaries[j].addr] = bidValues[notaries[j+1].addr];
