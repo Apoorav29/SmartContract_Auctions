@@ -1,5 +1,5 @@
 pragma solidity  ^0.4.24;
-import "./usingOraclize.sol";
+// import "./usingOraclize.sol";
 
 contract Auction
 {
@@ -212,8 +212,8 @@ contract Auction
                     for(uint k=0;k<w1.length;k++){
                         if(w2[j]==w1[k])
                         {
-                            flag1=1;
                             si.intersect = true;
+                            flag1=1;
                             break;
                         }
                     }
@@ -293,10 +293,10 @@ contract Auction
                 }
                if((val1+val2)%q >= q/2) // if the condition is true swap the bidders and assigned notaries.
               {
-                  uint[2] w1 = bidValues[notaries[j].addr];   //There is no need to swap notaries because there is a mapping between bidders and notaries. -> i guesss it is necessary for the next step in which winner list is determined in the third loop we are accessing notaries array there so check that once..
+                  uint[2] memory w1 = bidValues[notaries[j].addr];   //There is no need to swap notaries because there is a mapping between bidders and notaries. -> i guesss it is necessary for the next step in which winner list is determined in the third loop we are accessing notaries array there so check that once..
                   bidValues[notaries[j].addr] = bidValues[notaries[j+1].addr];
                   bidValues[notaries[j+1].addr] = w1;
-                  Bidder v=bidders[j];
+                  Bidder memory v=bidders[j];
                   bidders[j]=bidders[j+1];
                   bidders[j+1]=v;
                   
