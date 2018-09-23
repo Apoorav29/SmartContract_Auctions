@@ -11,12 +11,12 @@ contract('Auction', (accounts) =>{
     const notary1 = accounts[3];
     const notary2 = accounts[4];
     beforeEach(async() =>{  
-        contractInstance = await Auction.deployed();
+        contractInstance = await Auction.deployed({from: auctioneer});
     })
     
     it('Multiple Bidder Registration', async() =>{
-        await contractInstance.registerBidder([[18,2],[5,16]], [8,9],{from: bidder1});
-        await contractInstance.registerBidder([[18, 3], [5, 15]], [7, 9], {from: bidder2});
+        await contractInstance.registerBidder([[18, 2],[5, 16]], [3,3],{from: bidder1}); // 3,4 -- 6 
+        await contractInstance.registerBidder([[18, 3], [5, 15]], [1,2], {from: bidder2}); // 4,3 --3
         const expected1 = await contractInstance.bidders(0);
         const expected2 = await contractInstance.bidders(1);        
         // console.log(bidder1);
@@ -32,5 +32,25 @@ contract('Auction', (accounts) =>{
 
         assert.equal(expected1, notary1, "The address of the notary doesn't match");
         assert.equal(expected2, notary2, "The address of the notary doesn't match");
+    })
+    it('Assign notaries to bidders', async () => {
+        // await contractInstance.registerBidder([[18, 2], [5, 16]], [8, 9], { from: bidder1 });
+        // await contractInstance.registerBidder([[18, 3], [5, 15]], [7, 9], { from: bidder2 });
+        // await contractInstance.registerNotary({from: notary1 });
+        // const expected3 = await contractInstance.notaries(1);
+        // await contractInstance.registerNotary({from: notary2 });
+        await contractInstance.assignNotary({ from: auctioneer });
+        await contractInstance.performWork({from: notary1});
+        await contractInstance.performWork({from: notary2});
+        await contractInstance.sortBidders({from: auctioneer});
+        await contractInstance.prior_Winner({from: notary1});
+        await contractInstance.prior_Winner({from: notary2});
+        await contractInstance.findWinners({from: auctioneer});
+        const winner = await contractInstance.winners(0);
+        console.log(winner);
+        assert.equal(winner, bidder1);
+        // assert.equal(winner, bidder2);
+        // const winner = await contractInstance.bidders(0)
+        // assert.equal(winner,bidder1,'The bidders have not been properly sorted');
     })
 })
