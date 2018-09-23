@@ -316,10 +316,10 @@ contract Auction
         for(uint it=0; it<winners.length; it++)
         {
             uint idx=-1;
-            uint[2] w1=item_map[bToN[winners[it].addr].addr];
+            uint[] w1=item_map[bToN[winners[it].addr].addr];
             for(uint j=0;j<bidders.length && bidders[j].addr!=winners[it].addr;j++)
             {
-                uint[2] w2 = item_map[bToN[bidderes[j].addr].addr];
+                uint[] w2 = item_map[bToN[bidderes[j].addr].addr];
                 bool flag=false;
                 for(uint it1=0;it<w1.length;it1++)
                 {
