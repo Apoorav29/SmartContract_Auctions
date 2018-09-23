@@ -197,8 +197,10 @@ contract Auction
         countIntersection++; // to maintain number of notaries who have done determination of intersection between sets.
         address myadd = msg.sender;
         uint[] w2;
+        uint flag1=0;
         w2=item_map[myadd];  // array of items for which bidding is to be done by that bidder
         for(uint i=0;i<notaries.length;i++){
+            flag1=0;
             if(notaries[i].addr!=myadd)
             {
                 uint[] w1;
@@ -210,11 +212,12 @@ contract Auction
                     for(uint k=0;k<w1.length;k++){
                         if(w2[j]==w1[k])
                         {
+                            flag1=1;
                             si.intersect = true;
                             break;
                         }
                     }
-                    if(w2[j]==w1[k])
+                    if(flag1==1)
                         break;
                     
                 }
