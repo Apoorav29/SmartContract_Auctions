@@ -235,8 +235,8 @@ contract Auction
             flag=0;
             for(uint j=0;j<winners.length;j++){
                 
-                workDone[bidders[i].addr]++;
-                workDone[winners[j].addr]++;
+                workDone[(bToN[bidders[i].addr]).addr]++;
+                workDone[(bToN[winners[j].addr]).addr]++;
                 
                 for(uint k=0;k<set_values[notaries[i].addr].length;k++){
                     if(((set_values[notaries[i].addr][k]).addr)==(bToN[winners[j].addr]).addr)
@@ -266,8 +266,8 @@ contract Auction
             for (uint j = 0; j < bidders.length-i-1; j++){
                 uint val1;
                 uint val2;
-                workDone[bidders[j].addr]++;
-                workDone[bidders[j+1].addr]++;
+                workDone[(bToN[bidders[j].addr]).addr]++;
+                workDone[(bToN[bidders[j+1].addr]).addr]++;
                 
                 // for u1-u2
                 for(uint k=0;k<results[bToN[bidders[j].addr].addr].length;k++)
@@ -290,9 +290,9 @@ contract Auction
                 }
                if((val1+val2)<q/2) // if the condition is true swap the bidders and assigned notaries.
               {
-                //   uint[2] w1 = bidValues[notaries[j].addr];   There is no need to swap notaries because there is a mapping between bidders and notaries.
-                //   bidValues[notaries[j].addr] = bidValues[notaries[j+1].addr];
-                //   bidValues[notaries[j+1].addr] = w1;
+                  uint[2] w1 = bidValues[notaries[j].addr];   //There is no need to swap notaries because there is a mapping between bidders and notaries. -> i guesss it is necessary for the next step in which winner list is determined in the third loop we are accessing notaries array there so check that once..
+                  bidValues[notaries[j].addr] = bidValues[notaries[j+1].addr];
+                  bidValues[notaries[j+1].addr] = w1;
                   Bidder v=bidders[j];
                   bidders[j]=bidders[j+1];
                   bidders[j+1]=v;
@@ -315,18 +315,18 @@ contract Auction
     {
         for(uint it=0; it<winners.length; it++)
         {
-            uint idx=-1;
+            int idx=-1;
             uint[] w1=item_map[bToN[winners[it].addr].addr];
             for(uint j=0;j<bidders.length && bidders[j].addr!=winners[it].addr;j++)
             {
-                uint[] w2 = item_map[bToN[bidderes[j].addr].addr];
+                uint[] w2 = item_map[bToN[bidders[j].addr].addr];
                 bool flag=false;
                 for(uint it1=0;it<w1.length;it1++)
                 {
                     for(uint it2=0;it2<w2.length;it2++)
                     {
                         if(w1[it1]==w2[it2]){
-                            idx=j;
+                            idx=int(j);
                             flag=true;
                             break;
                         }
@@ -345,7 +345,10 @@ contract Auction
             }
             else
             {
-                payments[winners[it].addr]=bidValues[bToN[bidders[idx].addr].addr]*sqrt(w1.length);
+                
+                //biValues contains the value of w in the form of u,v u mean to use that here? or you want to sum all the item values?
+                payments[winners[it].addr]=(((bidValues[bToN[bidders[uint(idx)].addr].addr])[0]+(bidValues[bToN[bidders[uint(idx)].addr].addr])[1])%q)*sqrt(w1.length);  
+                
             }
         }   
     }
