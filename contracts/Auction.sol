@@ -45,7 +45,7 @@ contract Auction
     mapping(address => Result[]) public results; // mapping between notaries and results of comparision used for sorting
     mapping(address => uint) public payments;
     mapping(address => uint) public notariesPayments;
-    mapping(address => uint) public pendingReturns;
+    mapping(address => uint256) public pendingReturns;
 
     constructor (uint _q, uint _m) 
     public
@@ -120,7 +120,7 @@ contract Auction
     public
     view
     returns(uint a)
-    {
+    {   
         return bidders.length;
     }
 
@@ -245,6 +245,7 @@ contract Auction
     public
     {
         winners.push(bidders[0]);  // first bidder in the list is always a winner so add directly
+        pendingReturns[bidders[0].addr] -= ((bidValues[bToN[bidders[0].addr].addr])[0] + (bidValues[bToN[bidders[0].addr].addr])[1])%q;
         uint flag;
         for(uint i=1;i<bidders.length;i++){
             flag=0;
@@ -268,7 +269,7 @@ contract Auction
             if(flag==0) //  if no intersection found between previous winner and current bidder make the bidder as a winner
             {
                 winners.push(bidders[i]);
-                pendingReturns[bidders[i].addr] -= (bidders[i].w[0] + bidders[i].w[1])%q;
+                pendingReturns[bidders[i].addr] -= ((bidValues[bToN[bidders[i].addr].addr])[0] + (bidValues[bToN[bidders[i].addr].addr])[1])%q;
             }
         }
         auctionEnded = true;
@@ -414,7 +415,7 @@ contract Auction
     public
     returns (bool)
     {
-        uint amount = pendingReturns[msg.sender];
+        uint256 amount = pendingReturns[msg.sender];
         if(amount > 0){
             pendingReturns[msg.sender] = 0;
             msg.sender.transfer(amount);

@@ -201,9 +201,9 @@ contract('Full Test 1', (accounts) =>{
     it('Multiple Bidder Registration', async() =>{
       
         //Test 1
-        await contractInstance.registerBidder([[5, 13], [6, 13]], [1, 2], { value: web3.toWei(0.005, "ether"),from: bidder1}); //{1,2} - 3
-        await contractInstance.registerBidder([[1, 2], [9, 12]], [3, 3], { value: web3.toWei(0.005, "ether"),from: bidder2});  //{3,4} - 6
-        await contractInstance.registerBidder([[3, 2]], [4, 4], { value: web3.toWei(0.005, "ether"), from: bidder3 }); //{5} - 8
+        await contractInstance.registerBidder([[5, 13], [6, 13]], [1, 2], { value: web3.toWei(0.00000000000000020, "ether"),from: bidder1}); //{1,2} - 3
+        await contractInstance.registerBidder([[1, 2], [9, 12]], [3, 3], { value: web3.toWei(0.00000000000000020, "ether"),from: bidder2});  //{3,4} - 6
+        await contractInstance.registerBidder([[3, 2]], [4, 4], { value: web3.toWei(0.00000000000000020, "ether"), from: bidder3 }); //{5} - 8
        
         const expected1 = await contractInstance.bidders(0);
         const expected2 = await contractInstance.bidders(1);        
@@ -274,7 +274,33 @@ contract('Full Test 1', (accounts) =>{
         assert.equal(payment1.c[0], 0);
         assert.equal(payment2.c[0], 0);
         assert.equal(payment3.c[0], 0);
+        const returns = await contractInstance.pendingReturns(bidder3);
+        const returns1 = await contractInstance.pendingReturns(bidder2);
+        const returns2 = await contractInstance.pendingReturns(bidder1);
+        assert.equal(192,returns.c[0]);
+        assert.equal(194,returns1.c[0]);
+        assert.equal(197,returns2.c[0]);
 
+        // const balance1 = await web3.eth.getBalance(bidder3);
+        // console.log(web3.toWei(balance1));
+        // console.log(returns.c[0]);
+        // console.log(returns1.c[0]);
+        // console.log(returns2.c[0]);
+        
+
+    })
+    it('check withdrawls', async() =>{
+        await contractInstance.withdraw({from: bidder1});
+        await contractInstance.withdraw({from: bidder2});
+        await contractInstance.withdraw({from: bidder3});
+        const returns = await contractInstance.pendingReturns(bidder3);
+        const returns1 = await contractInstance.pendingReturns(bidder2);
+        const returns2 = await contractInstance.pendingReturns(bidder1);
+        assert.equal(0,returns.c[0]);
+        assert.equal(0,returns1.c[0]);
+        assert.equal(0,returns2.c[0]);
+        // const balance1 = await web3.eth.getBalance(bidder3);
+        // console.log(balance1.c[0]);
     })
 })
 contract('Full Test 2', (accounts) => {
@@ -292,9 +318,9 @@ contract('Full Test 2', (accounts) => {
 
     it('Multiple Bidder Registration', async () => {
         // Test 2 
-        await contractInstance.registerBidder([[5, 13], [6, 13], [1, 2]], [1, 2], { value: web3.toWei(0.005, "ether"), from: bidder1 }); //{1,2,3} - 3
-        await contractInstance.registerBidder([[1, 2], [9, 12]], [3, 3], { value: web3.toWei(0.005, "ether"), from: bidder2 });  //{3,4} - 6
-        await contractInstance.registerBidder([[9, 12], [3, 2]], [4, 4], { value: web3.toWei(0.005, "ether"), from: bidder3 }); //{4,5} - 8 
+        await contractInstance.registerBidder([[5, 13], [6, 13], [1, 2]], [1, 2], { value: web3.toWei(0.0000000000000002, "ether"), from: bidder1 }); //{1,2,3} - 3
+        await contractInstance.registerBidder([[1, 2], [9, 12]], [3, 3], { value: web3.toWei(0.0000000000000002, "ether"), from: bidder2 });  //{3,4} - 6
+        await contractInstance.registerBidder([[9, 12], [3, 2]], [4, 4], { value: web3.toWei(0.0000000000000002, "ether"), from: bidder3 }); //{4,5} - 8 
 
         const expected1 = await contractInstance.bidders(0);
         const expected2 = await contractInstance.bidders(1);        
@@ -352,6 +378,11 @@ contract('Full Test 2', (accounts) => {
         // console.log(payment2.c[0]);
 
         // console.log(pay.c[0]);
+    })
+    it('check withdrawl values',async() =>{
+        const returns = await contractInstance.pendingReturns(bidder2);
+        assert.equal(200,returns.c[0]);
+        // console.log(returns.c[0]);
     })
 })
 contract('Full Test 3', (accounts) => {
