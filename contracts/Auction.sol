@@ -377,6 +377,18 @@ contract Auction
         }
     }
 
+    function withdrawNotaries()
+    isNotary()
+    public
+    returns (bool)
+    {
+        uint amount=notariesPayments[msg.sender];
+        if(amount > 0 ){
+            notariesPayments[msg.sender]=0;
+            msg.sender.transfer(amount);
+        }
+        return true;
+    }
     // function 
     /* 
     temporary function for testing with truffle
