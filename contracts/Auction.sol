@@ -34,7 +34,8 @@ contract Auction
     
     uint public count = 0;  // maintains count of notaries who have done comparision work
     uint public countIntersection = 0; // maintains count of notaries who have done determination of set intersections
-    
+    uint public constPayment;
+
     mapping(address => Notary) public bToN; // mapping between bidders and notaries
     mapping(address => uint[2]) public bidValues; // mapping between notaries and bid values of bidders assigned to them
     mapping(address => uint[]) public item_map; // mapping between notaries and set of items of bidders assigned to them
@@ -42,12 +43,14 @@ contract Auction
     mapping(address => uint) public workDone; // mapping containg notaries address and amount to be paid to notaries
     mapping(address => Result[]) public results; // mapping between notaries and results of comparision used for sorting
     mapping(address => uint) public payments;
-    
+    mapping(address => uint) public notariesPayments;
+
     constructor (uint _q, uint _m) 
     public
     {
         auctioneer = msg.sender;
         q = _q;
+        constPayment=q/10;
         emit auctionCreated(q, _m);
         // Auctioneer broadcasts the value Q and the no. of items m. 
     }
@@ -363,6 +366,15 @@ contract Auction
                 payments[winners[it].addr]=(((bidValues[bToN[bidders[uint(idx)].addr].addr])[0]+(bidValues[bToN[bidders[uint(idx)].addr].addr])[1])%q)*sqrt(w1.length);    
             }
         }   
+    }
+
+    function payNotaries()
+    onlyAuctioneer()
+    public
+    {
+        for(uint i=0;i<bidders.length;i++){
+            notariesPayments[bToN[bidders[i].addr].addr]=workDone[bToN[bidders[i].addr].addr]*constPayment;
+        }
     }
 
     // function 
