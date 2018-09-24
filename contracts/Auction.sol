@@ -7,7 +7,6 @@ contract Auction
     {
         address addr;
     }
-    
     struct Bidder // Bidder struct -- 2D arrays for random representation of values
     {
         address addr;   // The unique address
@@ -28,8 +27,6 @@ contract Auction
 
     address public auctioneer;  // Auctioneer conducts the auction, maybe beneficiary also as of now?
     uint public q;  // Q decided by auctioneer
-    uint[] items;    // Items array
-    uint auctionEnded;  // Whether auction  ended or not
     
     Bidder[] public winners;  // containg list of winners
     Notary[] public notaries; // containg list of notaries
@@ -51,11 +48,6 @@ contract Auction
     {
         auctioneer = msg.sender;
         q = _q;
-        // The items array is created. May remove if not needed
-        for (uint i = 0; i < _m; i++) 
-        {
-            items.push(i+1);
-        }
         emit auctionCreated(q, _m);
         // Auctioneer broadcasts the value Q and the no. of items m. 
     }
@@ -171,20 +163,18 @@ contract Auction
     function performWork()
     isNotary()
     public
+    // view
     {
         count++; // to maintain number of notaries who have done comparison work.
-        address myadd = msg.sender;
-        uint[2] w2;
-        w2=bidValues[myadd];  // u,v of bidder value of bidder assigned to notary
+        uint[2] memory w2 = bidValues[msg.sender];  // u,v of bidder value of bidder assigned to notary
         for(uint i=0;i<notaries.length;i++){
-            if(notaries[i].addr!=myadd){
-                uint[2] w1;
-                w1=bidValues[notaries[i].addr];
-                Result r;
-                r.addr = notaries[i].addr;
-                r.u=w2[0]-w1[0];
-                r.v=w1[1]-w2[1];
-                results[myadd].push(r);  // add the val1 and val2 into the mapping
+            if(notaries[i].addr!= msg.sender){
+                uint[2] memory w1 = bidValues[notaries[i].addr];
+                results[msg.sender].push(Result({
+                    addr: notaries[i].addr,
+                    u: w2[0] - w1[0],
+                    v: w1[1] -w2[1]
+                }));  // add the val1 and val2 into the mapping
             }
         }
     }
@@ -195,24 +185,23 @@ contract Auction
     public
     {
         countIntersection++; // to maintain number of notaries who have done determination of intersection between sets.
-        address myadd = msg.sender;
-        uint[] w2;
         uint flag1=0;
-        w2=item_map[myadd];  // array of items for which bidding is to be done by that bidder
-        for(uint i=0;i<bidders.length;i++){
+        uint[] memory w2 = item_map[msg.sender];  // array of items for which bidding is to be done by that bidder
+        for(uint i=0;i<notaries.length;i++)
+        {
             flag1=0;
-            if(bToN[bidders[i].addr].addr!=myadd)
+            if(notaries[i].addr != msg.sender)
             {
-                uint[] w1;
-                w1=item_map[bToN[bidders[i].addr].addr];
-                setIntersection si;
-                si.addr=bToN[bidders[i].addr].addr;
-                si.intersect=false;
+                uint[] memory w1 = item_map[notaries[i].addr];
+                // setIntersection si;
+                // si.addr = notaries[i].addr;
+                bool _intersect = false;
                 for(uint j=0;j<w2.length;j++){
                     for(uint k=0;k<w1.length;k++){
-                        if(w2[j]==w1[k])
+                        if(w2[j] == w1[k])
                         {
-                            si.intersect = true;
+                            _intersect = true;
+                            // si.intersect = true;
                             flag1=1;
                             break;
                         }
@@ -221,13 +210,16 @@ contract Auction
                         break;
                     
                 }
-                set_values[myadd].push(si);  // pushing true or false according to intersection found between array of items of different bidders
+                set_values[msg.sender].push(setIntersection({
+                    addr :  notaries[i].addr,
+                    intersect : _intersect
+                }));  // pushing true or false according to intersection found between array of items of different bidders
             }
         }
     }
     
     function findWinners()
-    // onlyAuctioneer()
+    onlyAuctioneer()
     workCompleted1()
     public
     {
@@ -259,7 +251,7 @@ contract Auction
     
     function sortBidders()
     workCompleted() 
-    // onlyAuctioneer()
+    onlyAuctioneer()
     public
     {
         // Sort the bidders array according to Procedure 1.
@@ -305,7 +297,10 @@ contract Auction
         }
     }
 
-    function sqrt(uint x) returns (uint y) {
+    function sqrt(uint x) 
+    private
+    returns (uint y) 
+    {
         uint z = (x + 1) / 2;
         y = x;
         while (z < y) {
@@ -320,16 +315,20 @@ contract Auction
         for(uint it=0; it<winners.length; it++)
         {
             int idx=-1;
-            uint[] w1=item_map[bToN[winners[it].addr].addr];
-            for(uint j=0;j<bidders.length && bidders[j].addr!=winners[it].addr;j++)
+            uint[] memory w1=item_map[bToN[winners[it].addr].addr];
+            for(uint j=0;j<bidders.length;j++)
             {
-                uint[] w2 = item_map[bToN[bidders[j].addr].addr];
+                if(bidders[j].addr == winners[it].addr)
+                {
+                    continue;
+                }
+                uint[] memory w2 = item_map[bToN[bidders[j].addr].addr];
                 bool flag=false;
                 for(uint it1=0;it<w1.length;it1++)
                 {
                     for(uint it2=0;it2<w2.length;it2++)
                     {
-                        if(w1[it1]==w2[it2]){
+                        if(w1[it1] == w2[it2]){
                             idx=int(j);
                             flag=true;
                             break;
@@ -349,10 +348,8 @@ contract Auction
             }
             else
             {
-                
                 //biValues contains the value of w in the form of u,v u mean to use that here? or you want to sum all the item values?
-                payments[winners[it].addr]=(((bidValues[bToN[bidders[uint(idx)].addr].addr])[0]+(bidValues[bToN[bidders[uint(idx)].addr].addr])[1])%q)*sqrt(w1.length);  
-                
+                payments[winners[it].addr]=(((bidValues[bToN[bidders[uint(idx)].addr].addr])[0]+(bidValues[bToN[bidders[uint(idx)].addr].addr])[1])%q)*sqrt(w1.length);    
             }
         }   
     }
