@@ -421,3 +421,53 @@ contract('Full Test 3', (accounts) => {
 
     })
 })
+contract('Full Test 4 - Only one bidder and more than one notaries.', (accounts) => {
+    const auctioneer = accounts[0];
+    const bidder1 = accounts[1];
+    const notary1 = accounts[2];
+    const notary2 = accounts[3];
+    
+    beforeEach(async () => {
+        contractInstance = await Auction.deployed({ from: auctioneer });
+    })
+
+    it('One Bidder Registration', async () => {
+        await contractInstance.registerBidder([[5, 13], [6, 13], [1, 2]], [1, 2], { from: bidder1}); //{1,2,3} - 3
+        
+        const expected1 = await contractInstance.bidders(0);
+        assert.equal(expected1, bidder1, "The address of the bidder doesn't match");
+        
+    })
+    it('Multiple Notary Registration', async () => {
+        await contractInstance.registerNotary({ from: notary1 });
+        await contractInstance.registerNotary({ from: notary2 });
+        const expected1 = await contractInstance.notaries(0);
+        const expected2 = await contractInstance.notaries(1);
+        assert.equal(expected1, notary1, "The address of the notary doesn't match");
+        assert.equal(expected2, notary2, "The address of the notary doesn't match");
+        
+    })
+    it('Assign notaries to bidders', async () => {
+        await contractInstance.assignNotary({ from: auctioneer });
+    })
+    it('Let Notaries exchange values', async () => {
+        await contractInstance.performWork({ from: notary1 });
+        await contractInstance.performWork({ from: notary2 });
+    })
+    it('Sort the bidders with procedure1', async () => {
+        await contractInstance.sortBidders({ from: auctioneer });
+    })
+    it('Calculate Item Intersection', async () => {
+        await contractInstance.prior_Winner({ from: notary1 });
+        await contractInstance.prior_Winner({ from: notary2 });
+        //await contractInstance.prior_Winner({ from: notary3 });
+    })
+    it('Check Winners calculated are correct', async () => {
+        await contractInstance.findWinners({ from: auctioneer });
+        const winner1 = await contractInstance.winners(0);
+        assert.equal(winner1, bidder1);
+    })
+    it('Check Payments', async () => {
+        await contractInstance.makePayments({ from: auctioneer });
+    })
+})
