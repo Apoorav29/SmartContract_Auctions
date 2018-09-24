@@ -45,6 +45,7 @@ contract Auction
     mapping(address => Result[]) public results; // mapping between notaries and results of comparision used for sorting
     mapping(address => uint) public payments;
     mapping(address => uint) public notariesPayments;
+    mapping(address => uint) public pendingReturns;
 
     constructor (uint _q, uint _m) 
     public
@@ -112,6 +113,7 @@ contract Auction
     // Events
     event bidGiven (address _bidder, uint[2][] _uv, uint[2] _w); // just for checking
     event auctionCreated(uint q, uint m);
+    event auctionEnd();
 
     //Getter Functions for testing
     function getBiddersLength()
@@ -131,10 +133,13 @@ contract Auction
     }
     // Bidder will bid using this function
     function registerBidder(uint[2][] _uv, uint[2] _w)
+    payable
     isNotAuctioneer()
     isNotBidder()   // Same bidder can't bid more than once
     public
     {
+        require( msg.value > _uv.length * (_w[0] + _w[1])%q, "Insufficient amount of ether sent");
+        pendingReturns[msg.sender] = msg.value;
         bidders.push(Bidder({
             addr: msg.sender,
             uv: _uv,
@@ -180,7 +185,6 @@ contract Auction
     function performWork()
     isNotary()
     public
-    // view
     {
         count++; // to maintain number of notaries who have done comparison work.
         uint[2] memory w2 = bidValues[msg.sender];  // u,v of bidder value of bidder assigned to notary
@@ -262,9 +266,13 @@ contract Auction
                     break;
             }
             if(flag==0) //  if no intersection found between previous winner and current bidder make the bidder as a winner
+            {
                 winners.push(bidders[i]);
+                pendingReturns[bidders[i].addr] -= (bidders[i].w[0] + bidders[i].w[1])%q;
+            }
         }
         auctionEnded = true;
+        emit auctionEnd();
     }
     
     function sortBidders()
@@ -370,6 +378,7 @@ contract Auction
             {
                 //biValues contains the value of w in the form of u,v u mean to use that here? or you want to sum all the item values?
                 payments[winners[it].addr]=(((bidValues[bToN[bidders[uint(idx)].addr].addr])[0]+(bidValues[bToN[bidders[uint(idx)].addr].addr])[1]))*sqrt(w1.length);    
+                pendingReturns[winners[it].addr] -= payments[winners[it].addr];
             }
         }   
     }
@@ -395,6 +404,19 @@ contract Auction
         uint amount=notariesPayments[msg.sender];
         if(amount > 0 ){
             notariesPayments[msg.sender]=0;
+            msg.sender.transfer(amount);
+        }
+        return true;
+    }
+
+    function withdraw()
+    onlyIfTrue(auctionEnded)
+    public
+    returns (bool)
+    {
+        uint amount = pendingReturns[msg.sender];
+        if(amount > 0){
+            pendingReturns[msg.sender] = 0;
             msg.sender.transfer(amount);
         }
         return true;

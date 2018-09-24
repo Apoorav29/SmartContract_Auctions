@@ -16,7 +16,7 @@ contract('Unit Tests', (accounts) =>{
     })
     it('Check Auctioneer cannot register as a bidder', async() => {
         try{
-            await contractInstance.registerBidder([[5, 13], [6, 13]], [1, 2], { from: auctioneer }); //{1,2} - 3
+            await contractInstance.registerBidder([[5, 13], [6, 13]], [1, 2], { value: web3.toWei(0.005, "ether"), from: auctioneer }); //{1,2} - 3
             assert.fail();
         }
         catch(e){
@@ -32,13 +32,23 @@ contract('Unit Tests', (accounts) =>{
             assert.ok(true);
         }
     })
+    it('Check bidder cannot register without payment', async () => {
+        //Test 1
+        try {
+            await contractInstance.registerBidder([[1, 2], [9, 12]], [3, 3], { value: web3.toWei(0, "ether"), from: bidder1 });  //{3,4} - 6
+            assert.fail("Bidder was able to register");
+        }
+        catch (err) {
+            assert.ok(true);
+        }
+    })
     it('Check same bidder cannot register more than once', async () => {
         //Test 1
-        await contractInstance.registerBidder([[5, 13], [6, 13]], [1, 2], { from: bidder1 }); //{1,2} - 3
+        await contractInstance.registerBidder([[5, 13], [6, 13]], [1, 2], { value: web3.toWei(0.005, "ether"), from: bidder1 }); //{1,2} - 3
         const prevCount = await contractInstance.getBiddersLength();
         assert.equal(prevCount.c[0], 1,"The bidders array should have one element");
         try{
-            await contractInstance.registerBidder([[1, 2], [9, 12]], [3, 3], { from: bidder1 });  //{3,4} - 6
+            await contractInstance.registerBidder([[1, 2], [9, 12]], [3, 3], { value: web3.toWei(0.005, "ether"),from: bidder1 });  //{3,4} - 6
             assert.fail("Bidder was able to double register");
         }
         catch(err){
@@ -191,9 +201,9 @@ contract('Full Test 1', (accounts) =>{
     it('Multiple Bidder Registration', async() =>{
       
         //Test 1
-        await contractInstance.registerBidder([[5, 13],[6, 13]], [1,2], {from: bidder1}); //{1,2} - 3
-        await contractInstance.registerBidder([[1, 2],[9, 12]], [3,3], {from: bidder2});  //{3,4} - 6
-        await contractInstance.registerBidder([[3,2]], [4, 4], { from: bidder3 }); //{5} - 8
+        await contractInstance.registerBidder([[5, 13], [6, 13]], [1, 2], { value: web3.toWei(0.005, "ether"),from: bidder1}); //{1,2} - 3
+        await contractInstance.registerBidder([[1, 2], [9, 12]], [3, 3], { value: web3.toWei(0.005, "ether"),from: bidder2});  //{3,4} - 6
+        await contractInstance.registerBidder([[3, 2]], [4, 4], { value: web3.toWei(0.005, "ether"), from: bidder3 }); //{5} - 8
        
         const expected1 = await contractInstance.bidders(0);
         const expected2 = await contractInstance.bidders(1);        
@@ -282,9 +292,9 @@ contract('Full Test 2', (accounts) => {
 
     it('Multiple Bidder Registration', async () => {
         // Test 2 
-        await contractInstance.registerBidder([[5, 13], [6, 13], [1, 2]], [1, 2], { from: bidder1 }); //{1,2,3} - 3
-        await contractInstance.registerBidder([[1, 2], [9, 12]], [3, 3], { from: bidder2 });  //{3,4} - 6
-        await contractInstance.registerBidder([[9, 12], [3, 2]], [4, 4], { from: bidder3 }); //{4,5} - 8 
+        await contractInstance.registerBidder([[5, 13], [6, 13], [1, 2]], [1, 2], { value: web3.toWei(0.005, "ether"), from: bidder1 }); //{1,2,3} - 3
+        await contractInstance.registerBidder([[1, 2], [9, 12]], [3, 3], { value: web3.toWei(0.005, "ether"), from: bidder2 });  //{3,4} - 6
+        await contractInstance.registerBidder([[9, 12], [3, 2]], [4, 4], { value: web3.toWei(0.005, "ether"), from: bidder3 }); //{4,5} - 8 
 
         const expected1 = await contractInstance.bidders(0);
         const expected2 = await contractInstance.bidders(1);        
@@ -359,9 +369,9 @@ contract('Full Test 3', (accounts) => {
 
     it('Multiple Bidder Registration', async () => {
         // Test 3
-        await contractInstance.registerBidder([[5, 13], [6, 13], [1, 2]], [1, 2], { from: bidder1}); //{1,2,3} - 3
-        await contractInstance.registerBidder([[1, 2], [9, 12]], [3, 3], { from: bidder2});  //{3,4} - 6
-        await contractInstance.registerBidder([[3, 2]], [4, 4], { from: bidder3 }); //{5} - 8 
+        await contractInstance.registerBidder([[5, 13], [6, 13], [1, 2]], [1, 2], { value: web3.toWei(0.005, "ether"),from: bidder1}); //{1,2,3} - 3
+        await contractInstance.registerBidder([[1, 2], [9, 12]], [3, 3], { value: web3.toWei(0.005, "ether"),from: bidder2});  //{3,4} - 6
+        await contractInstance.registerBidder([[3, 2]], [4, 4], { value: web3.toWei(0.005, "ether"),from: bidder3 }); //{5} - 8 
 
         const expected1 = await contractInstance.bidders(0);
         const expected2 = await contractInstance.bidders(1);
@@ -432,7 +442,7 @@ contract('Full Test 4 - Only one bidder and more than one notaries.', (accounts)
     })
 
     it('One Bidder Registration', async () => {
-        await contractInstance.registerBidder([[5, 13], [6, 13], [1, 2]], [1, 2], { from: bidder1}); //{1,2,3} - 3
+        await contractInstance.registerBidder([[5, 13], [6, 13], [1, 2]], [1, 2], {value: web3.toWei(0.005, "ether"), from: bidder1}); //{1,2,3} - 3
         
         const expected1 = await contractInstance.bidders(0);
         assert.equal(expected1, bidder1, "The address of the bidder doesn't match");
