@@ -32,8 +32,8 @@ contract Auction
     Notary[] public notaries; // containg list of notaries
     Bidder[] public bidders; // containg list of bidders
     
-    uint public count;  // maintains count of notaries who have done comparision work
-    uint public countIntersection; // maintains count of notaries who have done determination of set intersections
+    uint public count = 0;  // maintains count of notaries who have done comparision work
+    uint public countIntersection = 0; // maintains count of notaries who have done determination of set intersections
     
     mapping(address => Notary) public bToN; // mapping between bidders and notaries
     mapping(address => uint[2]) public bidValues; // mapping between notaries and bid values of bidders assigned to them
@@ -109,6 +109,22 @@ contract Auction
     event bidGiven (address _bidder, uint[2][] _uv, uint[2] _w); // just for checking
     event auctionCreated(uint q, uint m);
 
+    //Getter Functions for testing
+    function getBiddersLength()
+    public
+    view
+    returns(uint a)
+    {
+        return bidders.length;
+    }
+
+    function getNotariesLength()
+    public
+    view
+    returns(uint a)
+    {
+        return notaries.length;
+    }
     // Bidder will bid using this function
     function registerBidder(uint[2][] _uv, uint[2] _w)
     isNotBidder()   // Same bidder can't bid more than once
@@ -144,11 +160,6 @@ contract Auction
     onlyAuctioneer()    // Only auctioneer should be able to call this method
     public
     {
-        /* 
-        mapping(struct -> struct) is not possible in solidity 
-            using a mapping(address => struct) instead
-        */
-        // TODO:Randomize this assigning somehow
         for(uint i=0;i<bidders.length;i++)
         {
             bToN[bidders[i].addr] = notaries[i];
