@@ -1,6 +1,5 @@
 pragma solidity  ^0.4.24;
 // import "./usingOraclize.sol";
-
 contract Auction
 {
     struct Notary   // Notary struct -- may add more attributes to notary if necessary
@@ -27,6 +26,8 @@ contract Auction
 
     address public auctioneer;  // Auctioneer conducts the auction, maybe beneficiary also as of now?
     uint public q;  // Q decided by auctioneer
+    bool auctionEnded = false;
+    bool paymentsCalculated = false;
     
     Bidder[] public winners;  // containg list of winners
     Notary[] public notaries; // containg list of notaries
@@ -34,7 +35,7 @@ contract Auction
     
     uint public count = 0;  // maintains count of notaries who have done comparision work
     uint public countIntersection = 0; // maintains count of notaries who have done determination of set intersections
-    uint public constPayment;
+    uint public constPayment  = 0;
 
     mapping(address => Notary) public bToN; // mapping between bidders and notaries
     mapping(address => uint[2]) public bidValues; // mapping between notaries and bid values of bidders assigned to them
@@ -56,11 +57,11 @@ contract Auction
     }
 
      // Modifiers
-    modifier onlyBefore(uint _time) { require(now < _time, "Too Late"); _; }
-    modifier onlyAfter(uint _time) { require(now > _time, "Too Early"); _; }
+    modifier onlyIfTrue(bool x) { require(x == true, "Value of variable should be true"); _;}
     modifier onlyAuctioneer() {require(msg.sender == auctioneer, "Only Auctioneer is allowed to call this method"); _; }
     modifier workCompleted() { require(count == notaries.length, "All notaries have not finished work."); _; }
     modifier workCompleted1() { require(countIntersection == notaries.length, "All notaries have not finished work1."); _; }
+    modifier isNotAuctioneer() {require(msg.sender != auctioneer, "Auctioneer is not allowed to call this method"); _; }
     modifier isNotBidder()
     {
         bool flag = false;
@@ -130,6 +131,7 @@ contract Auction
     }
     // Bidder will bid using this function
     function registerBidder(uint[2][] _uv, uint[2] _w)
+    isNotAuctioneer()
     isNotBidder()   // Same bidder can't bid more than once
     public
     {
@@ -146,6 +148,7 @@ contract Auction
 
     // Notary will register using this function
     function registerNotary()
+    isNotAuctioneer()
     isNotNotary()   // Same notary can't register more than once
     public
     {
@@ -261,6 +264,7 @@ contract Auction
             if(flag==0) //  if no intersection found between previous winner and current bidder make the bidder as a winner
                 winners.push(bidders[i]);
         }
+        auctionEnded = true;
     }
     
     function sortBidders()
@@ -323,6 +327,7 @@ contract Auction
         }
     }
     function makePayments()
+    onlyIfTrue(auctionEnded)
     onlyAuctioneer()
     public
     {
@@ -330,6 +335,7 @@ contract Auction
         {
             int idx=-1;
             uint[] memory w1=item_map[bToN[winners[it].addr].addr];
+            bool flag = false;
             for(uint j=0;j<bidders.length;j++)
             {
                 if(bidders[j].addr == winners[it].addr)
@@ -337,47 +343,51 @@ contract Auction
                     continue;
                 }
                 uint[] memory w2 = item_map[bToN[bidders[j].addr].addr];
-                bool flag=false;
-                for(uint it1=0;it<w1.length;it1++)
+                for(uint it1=0;it1
+                <w1.length;it1++)
                 {
                     for(uint it2=0;it2<w2.length;it2++)
                     {
                         if(w1[it1] == w2[it2]){
                             idx=int(j);
-                            flag=true;
+                            flag = true;
                             break;
                         }
                     }
-                    if(flag=true)
+                    if(flag == true)
                         break;
                 }
-                if(flag==true)
+                if(flag == true)
                 {
                     break;
                 }
             }
-            if(idx==-1)
+            if(idx == -1)
             {
                 payments[winners[it].addr]=0;
             }
             else
             {
                 //biValues contains the value of w in the form of u,v u mean to use that here? or you want to sum all the item values?
-                payments[winners[it].addr]=(((bidValues[bToN[bidders[uint(idx)].addr].addr])[0]+(bidValues[bToN[bidders[uint(idx)].addr].addr])[1])%q)*sqrt(w1.length);    
+                payments[winners[it].addr]=(((bidValues[bToN[bidders[uint(idx)].addr].addr])[0]+(bidValues[bToN[bidders[uint(idx)].addr].addr])[1]))*sqrt(w1.length);    
             }
         }   
     }
 
     function payNotaries()
+    onlyIfTrue(auctionEnded)
     onlyAuctioneer()
     public
     {
         for(uint i=0;i<bidders.length;i++){
             notariesPayments[bToN[bidders[i].addr].addr]=workDone[bToN[bidders[i].addr].addr]*constPayment;
         }
+        paymentsCalculated = true;
     }
 
     function withdrawNotaries()
+    onlyIfTrue(paymentsCalculated)
+    onlyIfTrue(auctionEnded)
     isNotary()
     public
     returns (bool)
@@ -389,14 +399,4 @@ contract Auction
         }
         return true;
     }
-    // function 
-    /* 
-    temporary function for testing with truffle
-    function getQ()
-    public
-    returns (uint)
-    {
-        return q;
-    }
-*/
 }
